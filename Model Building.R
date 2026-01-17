@@ -76,3 +76,52 @@ diamonds2 %>%
   mutate(pred = round(2 ^ pred)) %>%
   select(price, pred, carat:table, x:z) %>%
   arrange(price)
+
+####### FLIGHT DATA ##########
+# Counting number of flights per day
+daily <- flights %>%
+  mutate(date = make_date(year, month, day)) %>%
+  group_by(date) %>%
+  summarize(n = n())
+daily
+
+ggplot(daily, aes(date, n)) +
+  geom_line()
+
+# Distribution of flight numbers by day of week
+daily <- daily %>%
+  mutate(wday = wday(date, label = TRUE))
+ggplot(daily, aes(wday, n)) +
+  geom_boxplot()
+
+mod <- lm(n ~ wday, data = daily)
+
+grid <- daily %>%
+  data_grid(wday) %>%
+  add_predictions(mod, "n")
+
+ggplot(daily, aes(wday, n)) +
+  geom_boxplot() +
+  geom_point(data = grid, color = "red", size = 4)
+
+daily <- daily %>%
+  add_residuals(mod)
+daily %>%
+  
+  ggplot(daily, aes(date, resid, color = wday)) +
+  geom_ref_line(h = 0) +
+  geom_line()
+
+ggplot(daily, aes(date, resid, color = wday)) +
+  geom_ref_line(h = 0) +
+  geom_line()
+
+daily %>%
+  filter(resid < -100)
+
+daily %>%
+  ggplot(aes(date, resid)) +
+  geom_ref_line(h = 0) +
+  geom_line(color = "grey50") +
+  geom_smooth(se = FALSE, span = 0.20)
+#> `geom_smooth()` using method = 'loess'
