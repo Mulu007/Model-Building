@@ -49,3 +49,30 @@ ggplot(diamonds2, aes(lcarat, lresid)) +
 ggplot(diamonds2, aes(cut, lresid)) + geom_boxplot()
 ggplot(diamonds2, aes(color, lresid)) + geom_boxplot()
 ggplot(diamonds2, aes(clarity, lresid)) + geom_boxplot()
+
+# MORE COMPLICATED MODEL
+mod_diamond2 <- lm(
+  lprice ~ lcarat + color + cut + clarity,
+  data = diamonds2
+)
+
+grid <- diamonds2 %>%
+  data_grid(cut, .model = mod_diamond2) %>%
+  add_predictions(mod_diamond2)
+grid
+
+ggplot(grid, aes(cut, pred)) +
+  geom_point()
+
+diamonds2 <- diamonds2 %>%
+  add_residuals(mod_diamond2, "lresid2")
+
+ggplot(diamonds2, aes(lcarat, lresid2)) +
+  geom_hex(bins = 50)
+
+diamonds2 %>%
+  filter(abs(lresid2) > 1) %>%
+  add_predictions(mod_diamond2) %>%
+  mutate(pred = round(2 ^ pred)) %>%
+  select(price, pred, carat:table, x:z) %>%
+  arrange(price)
