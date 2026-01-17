@@ -125,3 +125,73 @@ daily %>%
   geom_line(color = "grey50") +
   geom_smooth(se = FALSE, span = 0.20)
 #> `geom_smooth()` using method = 'loess'
+
+# seasonal Saturday Effect
+daily %>%
+  filter(wday == "Sat") %>%
+  ggplot(aes(date, n)) +
+  geom_point() +
+  geom_line() +
+  # controls how dates appear on the x-axis
+  scale_x_date(
+    # no label
+    NULL,
+    date_breaks = "1 month",
+    # Controls how the date is printed
+    # %b means abbreviated month name
+    date_labels = "%b"
+  )
+
+term <- function(date) {
+  cut(date,
+      breaks = ymd(20130101, 20130605, 20130825, 20140101),
+      labels = c("spring", "summer", "fall")
+  )
+}
+
+daily <- daily %>%
+  mutate(term = term(date))
+
+daily %>%
+  filter(wday == "Sat") %>%
+  ggplot(aes(date, n, color = term)) +
+  geom_point(alpha = 1/3) +
+  geom_line() +
+  scale_x_date(
+    NULL,
+    date_breaks = "1 month",
+    date_labels = "%b"
+  )
+
+daily %>%
+  ggplot(aes(wday, n, color = term)) +
+  geom_boxplot()
+
+mod1 <- lm(n ~ wday, data = daily)
+mod2 <- lm(n ~ wday * term, data = daily)
+
+daily %>%
+  gather_residuals(without_term = mod1, with_term = mod2) %>%
+  ggplot(aes(date, resid, color = model)) +
+  geom_line(alpha = 0.75)
+
+grid <- daily %>%
+  data_grid(wday, term) %>%
+  add_predictions(mod2, "n")
+
+ggplot(daily, aes(wday, n)) +
+  geom_boxplot() +
+  geom_point(data = grid, color = "red") +
+  facet_wrap(~ term)
+
+# A model that doesnt move data alot based on outliers
+# rlm is Robust Linear Model
+# Large residuals get less influence
+# Uses M-estimation indstead of least squares -> it listens to everyone but wont let the loudest voices shout over the rest
+mod3 <- MASS::rlm(n ~ wday * term, data = daily)
+
+daily %>%
+  add_residuals(mod3, "resid") %>%
+  ggplot(aes(date, resid)) +
+  geom_hline(yintercept = 0, size = 2, color = "white") +
+  geom_line()
