@@ -38,3 +38,14 @@ grid <- diamonds2 %>%
 ggplot(diamonds2, aes(carat, price)) +
   geom_hex(bins = 50) +
   geom_line(data = grid, color = "red", size = 1)
+
+# Residual analysis
+diamonds2 <- diamonds2 %>%
+  add_residuals(mod_diamond, "lresid")
+
+ggplot(diamonds2, aes(lcarat, lresid)) +
+  geom_hex(bins = 50)
+
+ggplot(diamonds2, aes(cut, lresid)) + geom_boxplot()
+ggplot(diamonds2, aes(color, lresid)) + geom_boxplot()
+ggplot(diamonds2, aes(clarity, lresid)) + geom_boxplot()
